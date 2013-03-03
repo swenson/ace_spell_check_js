@@ -42,11 +42,11 @@ function misspelled(line) {
   return bads;
 }
 
-var maxMarkerId = 0;
+var contents_modified = true;
 
 var currently_spellchecking = false;
 
-var last_checked = 0;
+var markers_present = [];
 
 // Spell check the Ace editor contents.
 function spell_check() {
@@ -54,25 +54,23 @@ function spell_check() {
   if (dictionary == null) {
     return;
   }
+
   if (currently_spellchecking) {
   	return;
   }
 
+  if (!contents_modified) {
+  	return;
+  }
+  currently_spellchecking = true;
   var session = ace.edit(editor).getSession();
 
   // Clear the markers.
-  for (var i = 0; i < maxMarkerId; i++) {
-    session.removeMarker(i);
+  for (var i in markers_present) {
+    session.removeMarker(markers_present[i]);
   }
-  maxMarkerId = 0;
+  markers_present = [];
 
-  var current = new Date().getTime();
-  if (current - last_checked < 500) {
-  	return;
-  }
-  last_checked = current;
-
-  currently_spellchecking = true;
   try {
 	  var Range = ace.require('ace/range').Range
 	  var lines = session.getDocument().getAllLines();
@@ -88,17 +86,18 @@ function spell_check() {
 	    }
 	    for (var j in misspellings) {
 	      var range = new Range(i, misspellings[j][0], i, misspellings[j][1]);
-	      session.addMarker(range, "misspelled", maxMarkerId++, true);
+	      markers_present[markers_present.length] = session.addMarker(range, "misspelled", "typo", true);
 	    }
 	  }
 	} finally {
 		currently_spellchecking = false;
+		contents_modified = false;
 	}
 }
 
 function enable_spellcheck() {
   ace.edit(editor).getSession().on('change', function(e) {
-    spell_check();
+  	contents_modified = true;
 	});
-	spell_check();
+	setInterval(spell_check, 500);
 }

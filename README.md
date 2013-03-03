@@ -9,7 +9,6 @@ Fix this by modifying the `spellcheck_ace.js` file.
 TODOs:
 
 * Only spellcheck changed lines
-* Bug: line markers sometimes stick around after the word has changed?
 
 ![Screenshot](screenshot.png)
 

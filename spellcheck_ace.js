@@ -3,8 +3,8 @@
 // You should configure these classes.
 var editor = "editor"; // This should be the id of your editor element.
 var lang = "en_US";
-var dicPath = "/static/js/lib/typo/dictionaries/en_US/en_US.dic";
-var affPath = "/static/js/lib/typo/dictionaries/en_US/en_US.aff";
+var dicPath = "dictionaries/en_US/en_US.dic";
+var affPath = "dictionaries/en_US/en_US.aff";
 
 // Make red underline for gutter and words.
 $("<style type='text/css'>.ace_marker-layer .misspelled { position: absolute; z-index: -2; border-bottom: 1px solid red; margin-bottom: -1px; }</style>").appendTo("head");
@@ -21,19 +21,17 @@ $.get(dicPath, function(data) {
   }).done(function() {
   	console.log("Dictionary loaded");
     dictionary = new Typo(lang, affData, dicData);
-    enable_spellcheck();
-    spell_check();
   });
 });
 
 // Check the spelling of a line, and return [start, end]-pairs for misspelled words.
 function misspelled(line) {
-	var words = line.split(' ');
+	var words = line.split(/[^a-zA-Z\-']/);
 	var i = 0;
 	var bads = [];
 	for (word in words) {
-	  var x = words[word] + "";
-	  var checkWord = x.replace(/[^a-zA-Z']/g, '');
+		var x = words[word] + "";
+		var checkWord = x.replace(/[^a-zA-Z\-']/g, '');
 	  if (!dictionary.check(checkWord)) {
 	    bads[bads.length] = [i, i + words[word].length];
 	  }
@@ -65,18 +63,13 @@ function spell_check() {
   currently_spellchecking = true;
   var session = ace.edit(editor).getSession();
 
-  // Clear the markers.
-  for (var i in markers_present) {
-    session.removeMarker(markers_present[i]);
-  }
-  markers_present = [];
-
+	// Clear all markers and gutter
+	clear_spellcheck_markers();
+	// Populate with markers and gutter
   try {
 	  var Range = ace.require('ace/range').Range
 	  var lines = session.getDocument().getAllLines();
 	  for (var i in lines) {
-	  	// Clear the gutter.
-	    session.removeGutterDecoration(i, "misspelled");
 	    // Check spelling of this line.
 	    var misspellings = misspelled(lines[i]);
 	    
@@ -95,9 +88,43 @@ function spell_check() {
 	}
 }
 
+var spellcheckEnabled = false;
 function enable_spellcheck() {
-  ace.edit(editor).getSession().on('change', function(e) {
-  	contents_modified = true;
-	});
-	setInterval(spell_check, 500);
+	spellcheckEnabled = true
+	ace.edit(editor).getSession().on('change', function(e) {
+		if (spellcheckEnabled) {
+			contents_modified = true;
+			spell_check();
+		};
+	})
+	// needed to trigger update once without input
+	contents_modified = true;
+	spell_check();
+}
+
+function disable_spellcheck() {
+	spellcheckEnabled = false
+	// Clear the markers
+	clear_spellcheck_markers();
+}
+
+function clear_spellcheck_markers() {
+	var session = ace.edit(editor).getSession();
+	for (var i in markers_present) {
+		session.removeMarker(markers_present[i]);
+	};
+	markers_present = [];
+	// Clear the gutter
+	var lines = session.getDocument().getAllLines();
+	for (var i in lines) {
+		session.removeGutterDecoration(i, "misspelled");
+	};
+}
+
+function suggest_word_for_misspelled(misspelledWord) {
+	var is_spelled_correctly = dictionary.check(misspelledWord);
+	
+	var array_of_suggestions = dictionary.suggest(misspelledWord);
+	if (is_spelled_correctly || array_of_suggestions.length === 0) { return false }
+	return array_of_suggestions
 }

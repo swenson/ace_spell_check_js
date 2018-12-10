@@ -26,12 +26,12 @@ $.get(dicPath, function(data) {
 
 // Check the spelling of a line, and return [start, end]-pairs for misspelled words.
 function misspelled(line) {
-	var words = line.split(/[^a-zA-Z']/);
+	var words = line.split(/[^a-zA-Z\-']/);
 	var i = 0;
 	var bads = [];
 	for (word in words) {
 		var x = words[word] + "";
-		var checkWord = x.replace(/[^a-zA-Z']/g, '');
+		var checkWord = x.replace(/[^a-zA-Z\-']/g, '');
 	  if (!dictionary.check(checkWord)) {
 	    bads[bads.length] = [i, i + words[word].length];
 	  }
@@ -119,4 +119,12 @@ function clear_spellcheck_markers() {
 	for (var i in lines) {
 		session.removeGutterDecoration(i, "misspelled");
 	};
+}
+
+function suggest_word_for_misspelled(misspelledWord) {
+	var is_spelled_correctly = dictionary.check(misspelledWord);
+	
+	var array_of_suggestions = dictionary.suggest(misspelledWord);
+	if (is_spelled_correctly || array_of_suggestions.length === 0) { return false }
+	return array_of_suggestions
 }

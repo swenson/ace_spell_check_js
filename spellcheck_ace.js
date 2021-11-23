@@ -29,7 +29,7 @@ function misspelled(line) {
 	var words = line.split(/[^a-zA-Z\-']/);
 	var i = 0;
 	var bads = [];
-	for (word in words) {
+	for (var word in words) {
 		var x = words[word] + "";
 		var checkWord = x.replace(/[^a-zA-Z\-']/g, '');
 	  if (!dictionary.check(checkWord)) {
